@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+AUTOSTART_DIR="${HOME}/.config/autostart"
+mkdir -p "$AUTOSTART_DIR"
+
+cat > "${AUTOSTART_DIR}/wallterm-autostart.desktop" <<'EOF'
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=WallTerm Autostart
+Comment=Start wallterm on login
+Exec=/usr/bin/wallterm start
+Terminal=false
+X-GNOME-Autostart-enabled=true
+OnlyShowIn=GNOME;Unity;XFCE;KDE;
+EOF
+
+echo "wallterm autostart enabled: ${AUTOSTART_DIR}/wallterm-autostart.desktop"

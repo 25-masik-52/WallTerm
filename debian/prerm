@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove|deconfigure|upgrade|failed-upgrade)
+        if command -v pkill >/dev/null 2>&1; then
+            pkill -f '^/usr/bin/wallterm start$' 2>/dev/null || true
+        fi
+        ;;
+esac
+
+exit 0

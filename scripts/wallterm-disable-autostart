@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+AUTOSTART_FILE="${HOME}/.config/autostart/wallterm-autostart.desktop"
+
+if [[ -f "$AUTOSTART_FILE" ]]; then
+    rm -f "$AUTOSTART_FILE"
+    echo "wallterm autostart disabled"
+else
+    echo "wallterm autostart is not enabled"
+fi

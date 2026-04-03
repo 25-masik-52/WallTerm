@@ -1,0 +1,10 @@
+scripts/wallterm usr/bin/
+scripts/wallterm-enable-autostart usr/bin/
+scripts/wallterm-disable-autostart usr/bin/
+config/kitty-wallterm.conf etc/wallterm/
+config/wallterm.lua etc/wallterm/
+desktop/wallterm.desktop usr/share/applications/
+packaging/wallterm-autostart.desktop etc/xdg/autostart/
+README.md usr/share/doc/wallterm/
+CHANGELOG.md usr/share/doc/wallterm/
+CONTRIBUTING.md usr/share/doc/wallterm/

@@ -1,0 +1,275 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ACTION="${1:-help}"
+
+KITTY_BIN="kitty"
+KITTY_CONFIG="/etc/wallterm/kitty-wallterm.conf"
+
+CLASS_NAME="wallterm"
+
+TITLE_MAIN="wallterm-main"
+TITLE_MC="wallterm-mc"
+TITLE_REMOTE="wallterm-remote"
+TITLE_MONITOR="wallterm-monitor"
+
+RUNTIME_DIR="${XDG_RUNTIME_DIR:-/tmp}"
+STATE_DIR="${RUNTIME_DIR}/wallterm"
+LOCK_FILE="${STATE_DIR}/wallterm.lock"
+REMOTE_ZDOTDIR="${STATE_DIR}/remote-zdotdir"
+
+mkdir -p "$STATE_DIR"
+
+print_help() {
+    cat <<'EOF'
+wallterm — interactive terminal wallpaper
+
+Usage:
+  wallterm start
+      Start wallterm if it is not already running.
+
+  wallterm stop
+      Stop all wallterm windows.
+
+  wallterm restart
+      Restart wallterm.
+
+  wallterm status
+      Show current wallterm status.
+
+  wallterm help
+      Show this help.
+
+Notes:
+  - X11 is required.
+  - Uses kitty, devilspie2, wmctrl, xdotool.
+  - Right-top window uses isolated zsh prompt without touching ~/.zshrc.
+EOF
+}
+
+get_screen_size() {
+    local dims
+    dims="$(xdpyinfo | awk '/dimensions:/ {print $2; exit}')"
+    local w="${dims%x*}"
+    local h="${dims#*x}"
+    echo "$w $h"
+}
+
+wait_for_window() {
+    local title="$1"
+    local wid=""
+    for _ in $(seq 1 120); do
+        wid="$(xdotool search --name "^${title}$" 2>/dev/null | head -n1 || true)"
+        if [[ -n "$wid" ]]; then
+            echo "$wid"
+            return 0
+        fi
+        sleep 0.1
+    done
+    return 1
+}
+
+apply_window_props() {
+    local wid="$1"
+    local x="$2"
+    local y="$3"
+    local w="$4"
+    local h="$5"
+
+    wmctrl -ir "$wid" -b remove,maximized_vert,maximized_horz || true
+    wmctrl -ir "$wid" -b add,below,sticky,skip_taskbar,skip_pager || true
+    wmctrl -ir "$wid" -e "0,$x,$y,$w,$h" || true
+}
+
+start_devilspie() {
+    if ! pgrep -u "$USER" -x devilspie2 >/dev/null 2>&1; then
+        nohup devilspie2 >/dev/null 2>&1 &
+        sleep 0.8
+    fi
+}
+
+launch_kitty() {
+    local title="$1"
+    shift
+
+    nohup "$KITTY_BIN" \
+        --config "$KITTY_CONFIG" \
+        --class "$CLASS_NAME" \
+        --title "$title" \
+        "$@" >/dev/null 2>&1 &
+}
+
+has_any_wallterm_window() {
+    for title in \
+        "$TITLE_MAIN" \
+        "$TITLE_MC" \
+        "$TITLE_REMOTE" \
+        "$TITLE_MONITOR"
+    do
+        if xdotool search --name "^${title}$" >/dev/null 2>&1; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+ensure_remote_zdotdir() {
+    mkdir -p "$REMOTE_ZDOTDIR"
+
+    cat > "${REMOTE_ZDOTDIR}/.zshrc" <<'EOF'
+autoload -Uz colors && colors
+setopt PROMPT_SUBST
+unset RPROMPT
+
+PROMPT='%F{214}remote-shell%f %F{240}[%n@%m]%f %F{244}%~%f
+%F{45}ssh ->%f '
+EOF
+}
+
+ensure_x11() {
+    if [[ "${XDG_SESSION_TYPE:-unknown}" != "x11" ]]; then
+        echo "wallterm: X11 is required. Current session: ${XDG_SESSION_TYPE:-unknown}" >&2
+        exit 1
+    fi
+}
+
+start_windows() {
+    ensure_x11
+
+    exec 9>"$LOCK_FILE"
+    if ! flock -n 9; then
+        echo "wallterm: already running"
+        exit 0
+    fi
+
+    if has_any_wallterm_window; then
+        echo "wallterm: windows already exist"
+        exit 0
+    fi
+
+    start_devilspie
+    ensure_remote_zdotdir
+
+    read -r SW SH < <(get_screen_size)
+
+    local OUTER=8
+    local GAP=10
+
+    local HALF_W=$((SW / 2))
+    local HALF_H=$((SH / 2))
+
+    local W=$((HALF_W - OUTER - GAP / 2))
+    local H=$((HALF_H - OUTER - GAP / 2))
+
+    local X1=$OUTER
+    local Y1=$OUTER
+
+    local X2=$((HALF_W + GAP / 2))
+    local Y2=$OUTER
+
+    local X3=$OUTER
+    local Y3=$((HALF_H + GAP / 2))
+
+    local X4=$((HALF_W + GAP / 2))
+    local Y4=$((HALF_H + GAP / 2))
+
+    launch_kitty "$TITLE_MAIN" zsh -i
+    launch_kitty "$TITLE_MC" zsh -ic 'mc'
+    launch_kitty "$TITLE_REMOTE" env ZDOTDIR="$REMOTE_ZDOTDIR" zsh -i
+    launch_kitty "$TITLE_MONITOR" zsh -ic 'btop'
+
+    sleep 1.2
+
+    local WID_MAIN=""
+    local WID_MC=""
+    local WID_REMOTE=""
+    local WID_MONITOR=""
+
+    WID_MAIN="$(wait_for_window "$TITLE_MAIN")"
+    WID_MC="$(wait_for_window "$TITLE_MC")"
+    WID_REMOTE="$(wait_for_window "$TITLE_REMOTE")"
+    WID_MONITOR="$(wait_for_window "$TITLE_MONITOR")"
+
+    apply_window_props "$WID_MAIN"    "$X1" "$Y1" "$W" "$H"
+    apply_window_props "$WID_REMOTE"  "$X2" "$Y2" "$W" "$H"
+    apply_window_props "$WID_MC"      "$X3" "$Y3" "$W" "$H"
+    apply_window_props "$WID_MONITOR" "$X4" "$Y4" "$W" "$H"
+
+    sleep 0.5
+
+    apply_window_props "$WID_MAIN"    "$X1" "$Y1" "$W" "$H"
+    apply_window_props "$WID_REMOTE"  "$X2" "$Y2" "$W" "$H"
+    apply_window_props "$WID_MC"      "$X3" "$Y3" "$W" "$H"
+    apply_window_props "$WID_MONITOR" "$X4" "$Y4" "$W" "$H"
+}
+
+stop_windows() {
+    for title in \
+        "$TITLE_MAIN" \
+        "$TITLE_MC" \
+        "$TITLE_REMOTE" \
+        "$TITLE_MONITOR"
+    do
+        while read -r wid; do
+            [[ -z "$wid" ]] && continue
+            wmctrl -ic "$wid" || true
+        done < <(xdotool search --name "^${title}$" 2>/dev/null || true)
+    done
+
+    rm -f "$LOCK_FILE"
+}
+
+restart_windows() {
+    stop_windows
+    sleep 1
+    start_windows
+}
+
+status_windows() {
+    echo "Session type: ${XDG_SESSION_TYPE:-unknown}"
+    echo
+
+    for title in \
+        "$TITLE_MAIN" \
+        "$TITLE_MC" \
+        "$TITLE_REMOTE" \
+        "$TITLE_MONITOR"
+    do
+        if xdotool search --name "^${title}$" >/dev/null 2>&1; then
+            echo "[ok] ${title}"
+        else
+            echo "[--] ${title}"
+        fi
+    done
+
+    if pgrep -u "$USER" -x devilspie2 >/dev/null 2>&1; then
+        echo "[ok] devilspie2"
+    else
+        echo "[--] devilspie2"
+    fi
+}
+
+case "$ACTION" in
+    start)
+        start_windows
+        ;;
+    stop)
+        stop_windows
+        ;;
+    restart)
+        restart_windows
+        ;;
+    status)
+        status_windows
+        ;;
+    help|-h|--help)
+        print_help
+        ;;
+    *)
+        echo "Unknown command: $ACTION" >&2
+        echo
+        print_help
+        exit 1
+        ;;
+esac

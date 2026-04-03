@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=WallTerm
+Comment=Interactive terminal wallpaper
+Exec=/usr/bin/wallterm start
+Terminal=false
+Categories=System;Utility;

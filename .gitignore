@@ -1,0 +1,13 @@
+*.deb
+*.build
+*.buildinfo
+*.changes
+*.dsc
+*.tar.xz
+.debhelper/
+debian/.debhelper/
+debian/files
+debian/wallterm/
+debian/tmp/
+build/
+dist/

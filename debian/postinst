@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        chmod 0755 /usr/bin/wallterm || true
+        chmod 0755 /usr/bin/wallterm-enable-autostart || true
+        chmod 0755 /usr/bin/wallterm-disable-autostart || true
+        ;;
+esac
+
+exit 0

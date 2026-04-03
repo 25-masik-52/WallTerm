@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=WallTerm Autostart
+Comment=Start wallterm on login
+Exec=/usr/bin/wallterm start
+Terminal=false
+X-GNOME-Autostart-enabled=true
+OnlyShowIn=GNOME;Unity;XFCE;KDE;

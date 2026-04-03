@@ -1,0 +1,2 @@
+/etc/wallterm/wallterm.lua /usr/share/wallterm/wallterm.lua
+/etc/wallterm/kitty-wallterm.conf /usr/share/wallterm/kitty-wallterm.conf
