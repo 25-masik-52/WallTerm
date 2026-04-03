@@ -9,5 +9,7 @@ debian/.debhelper/
 debian/files
 debian/wallterm/
 debian/tmp/
+debian/debhelper-build-stamp
+debian/wallterm.substvars
 build/
 dist/
