@@ -1,7 +1,7 @@
 Source: wallterm
 Section: utils
 Priority: optional
-Maintainer: 25-masik-52 3len4ik3@gmail.com
+Maintainer: 25-masik-52 <3len4ik3@gmail.com>
 Build-Depends: debhelper-compat (= 13)
 Standards-Version: 4.7.4.1
 Rules-Requires-Root: no

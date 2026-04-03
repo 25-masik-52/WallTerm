@@ -1,8 +1,16 @@
 PACKAGE=wallterm
-VERSION=0.1.0
+VERSION=1.0.0
+
+.PHONY: all build package clean install-local run stop
+
+all:
+	@echo "Use: make package"
 
 build:
-	dpkg-buildpackage -us -uc
+	@echo "Nothing to build"
+
+package:
+	dpkg-buildpackage -us -uc -b
 
 clean:
 	rm -rf ../$(PACKAGE)_*.build ../$(PACKAGE)_*.buildinfo ../$(PACKAGE)_*.changes
