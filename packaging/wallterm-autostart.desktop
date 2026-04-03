@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Version=1.0
+Version=1.0.0
 Name=WallTerm Autostart
 Comment=Start wallterm on login
 Exec=/usr/bin/wallterm start
